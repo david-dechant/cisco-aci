@@ -1,0 +1,89 @@
+- name: Netzerstellung
+  hosts: apic
+  vars:
+    payload:
+      input_tenant: "KUNDE_A"
+      input_service_name: "Exchange"
+      input_vcenter_cluster: "36-test"
+      input_zone: "INTERN"
+      input_stage: "Test"
+      input_tier: "t1"
+      input_size: 140
+      input_aeep: "AAEP_INTERN"
+      input_phys_domain: "PHYS_DOMAIN_INTERN"
+    feste_werte:
+      gateway: "10.1.1.1"
+      mask: 24
+      scope: public
+  pre_tasks:
+    # TODOS
+      # Eingaben validieren
+        # finale Werte (Strings) erstellen
+      # Berechnung welche Netzgröße bei beantragten Hosts nötig wäre
+      # Auswürfelung des Netzes (im Test erstmal vorgeben)
+      # VLAN ID auswürfeln ( > 1, < 3900)
+      # First IP Object in Subnet suchen (Gateway) -> immer erste IP in /<CIDR> Subnet
+      # 
+  tasks:
+
+    - name: Configure VRF
+      cisco.aci.aci_vrf:
+        tenant: "{{ payload.input_tenant }}"
+        vrf: "VRF_{{ payload.input_tenant }}_{{ payload.input_stage | upper }}_{{ payload.input_tier | upper }}" # VRF Name: VRF_<Kunde>_<stage>_<tier>
+        # descr: "{{ payload.description }}"
+        state: present
+      tags: [vrfs, all]
+
+    - name: Configure Bridge Domain
+      cisco.aci.aci_bd:
+        tenant: "{{ payload.input_tenant }}"
+        vrf: "VRF_{{ payload.input_tenant }}_{{ payload.input_stage | upper }}_{{ payload.input_tier | upper }}" 
+        bd: "BD_{{ payload.input_service_name }}" # BD_<Servicename>
+        state: "present"
+      tags: [bds, all]
+
+    - name: Configure Subnet
+      cisco.aci.aci_bd_subnet:
+        tenant: "{{ payload.input_tenant }}"
+        bd: "BD_{{ payload.input_service_name }}"
+        # subnet_name: "SN_{{ payload.input_service_name }}" #  SN_<ServiceName>
+        gateway: "{{ feste_werte.gateway }}"
+        mask: "{{ feste_werte.mask }}"
+        scope: "{{ feste_werte.scope }}"
+        state: "present"
+      tags: [subnets, all]
+
+    - name: Configure Application Profile
+      cisco.aci.aci_ap:
+        tenant: "{{ payload.input_tenant }}"
+        ap: "APP_{{ payload.input_tenant }}_{{ payload.input_stage | upper }}_{{ payload.input_tier | upper }}" # APP_<VRF>
+        state: "present"
+      tags: [aps, all]
+
+    - name: Configure EPG
+      cisco.aci.aci_epg:
+        tenant: "{{ payload.input_tenant }}"
+        ap: "APP_{{ payload.input_tenant }}_{{ payload.input_stage | upper }}_{{ payload.input_tier | upper }}" # APP_<VRF>
+        epg: "EPG_{{ payload.input_service_name }}" # EPG_<Servicename>
+        bd: "BD_{{ payload.input_service_name }}"
+        state: present
+      tags: [epgs, all]
+  
+    - name: Add a new ESG
+      cisco.aci.aci_esg:
+        tenant: "{{ payload.input_tenant }}"
+        ap: "APP_{{ payload.input_tenant }}_{{ payload.input_stage | upper }}_{{ payload.input_tier | upper }}"
+        esg:  "ESG_{{ payload.input_service_name }}" # ESG_<Servicename>
+        vrf: "VRF_{{ payload.input_tenant }}_{{ payload.input_stage | upper }}_{{ payload.input_tier | upper }}"
+        # description: Web Intranet ESG
+        state: present
+
+    - name: Add an EPG selector
+      cisco.aci.aci_esg_epg_selector:
+        tenant: "{{ payload.input_tenant }}" 
+        ap: "APP_{{ payload.input_tenant }}_{{ payload.input_stage | upper }}_{{ payload.input_tier | upper }}"
+        esg:  "ESG_{{ payload.input_service_name }}" # ESG_<Servicename>
+        epg_ap: "APP_{{ payload.input_tenant }}_{{ payload.input_stage | upper }}_{{ payload.input_tier | upper }}"
+        epg: "EPG_{{ payload.input_service_name }}" # EPG_<Servicename>
+        # description: epg-test-description
+        state: present

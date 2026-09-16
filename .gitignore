@@ -4,3 +4,4 @@ ansible-navigator.log
 .ssh
 context
 setup-cisco-apic-vm.md
+.python-version
