@@ -18,11 +18,18 @@
   pre_tasks:
     # TODOS
       # Eingaben validieren
+        # Abbruch bei nicht erlaubten Werten
         # finale Werte (Strings) erstellen
       # Berechnung welche Netzgröße bei beantragten Hosts nötig wäre
+        # Mapping Tabelle
       # Auswürfelung des Netzes (im Test erstmal vorgeben)
+        # manuell aktuell
+        # später -> Netbox
       # VLAN ID auswürfeln ( > 1, < 3900)
+        # manuell aktuell
+        # später -> Netbox
       # First IP Object in Subnet suchen (Gateway) -> immer erste IP in /<CIDR> Subnet
+        # Mapping Tabelle
       # 
   tasks:
 
@@ -87,3 +94,8 @@
         epg: "EPG_{{ payload.input_service_name }}" # EPG_<Servicename>
         # description: epg-test-description
         state: present
+
+  post_tasks:
+    # TODOS
+    # Change erstellen
+    # Benachrichtigung an Team versenden
